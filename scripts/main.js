@@ -1,6 +1,5 @@
 var map, view;
 require([
-  "esri/geometry/SpatialReference",
   "esri/Map",
   "esri/Camera",
   "esri/views/SceneView",
@@ -8,36 +7,21 @@ require([
 
   "esri/Graphic",
   "esri/geometry/Point",
-  "esri/geometry/Polyline",
-
-  "esri/symbols/SimpleMarkerSymbol",
-  "esri/symbols/SimpleLineSymbol",
-  "esri/symbols/SimpleFillSymbol",
-
   "esri/symbols/PointSymbol3D",
   "esri/symbols/ObjectSymbol3DLayer",
-  "esri/symbols/IconSymbol3DLayer",
-  
-  "esri/renderers/SimpleRenderer",
-
-  "esri/Color",
 
   "dojo/dom",
-  "dojo/on",
   "dojo/domReady!"
-], function(SpatialReference, Map, Camera, SceneView, GraphicsLayer, 
-  Graphic, Point, Polyline, 
-  SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, 
-  PointSymbol3D, ObjectSymbol3DLayer, IconSymbol3DLayer, 
-  SimpleRenderer, 
-  Color, 
-  dom, on){
+], function(Map, Camera, SceneView, GraphicsLayer, 
+  Graphic, Point, PointSymbol3D, ObjectSymbol3DLayer, dom){
 
+  // initiate date and sun position
   var now = new Date();
   // should probably correct for time zone
   //now = now-now.getTimezoneOffset()*60*1000;
   var s = sunposition(now);
 
+  // info overlay that prints the date
   var timeInfo = dom.byId('info');
   timeInfo.innerHTML = now.toString();
 
@@ -45,6 +29,7 @@ require([
     basemap: "oceans"
   });
 
+  // set the camera
   view = new SceneView({
     container: "viewDiv",
     map: map,
@@ -59,9 +44,11 @@ require([
     shadows: true
   });
 
+  // add the graphics layer
   var graphicsLayer = new GraphicsLayer();
   map.add(graphicsLayer);
-  
+
+  // add the sun as a floating 3D yellow sphere
   var sunSymbol = new PointSymbol3D({
     symbolLayers: [new ObjectSymbol3DLayer({
       width:2500000,
@@ -85,6 +72,9 @@ require([
   });
   graphicsLayer.add(sunGraphic);
 
+  // update function that repeatedly calls itself
+  // every 33ms to increase the map time by 2min
+  // and update sun position
   var i=0;
   var updateSun = function(){
     window.setTimeout(function(){
@@ -94,11 +84,12 @@ require([
         now.getMonth(), 
         now.getDate(), 
         now.getHours(),
-        now.getMinutes()+i*5);
+        now.getMinutes()+i*2); // 2 minute intervals between updates
 
       s = sunposition(then);
       view.environment.lighting.set('date', then);
 
+      // remove graphic, add updated graphic
       graphicsLayer.remove(sunGraphic);
       pp = new Point({
         x:s.longitude,
@@ -114,7 +105,7 @@ require([
       timeInfo.innerHTML = then.toString();    
       i++;
       updateSun();
-    },50);
+    }, 33);
   };
   updateSun();
 });
